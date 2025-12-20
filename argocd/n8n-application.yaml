@@ -9,13 +9,10 @@ spec:
   project: default
 
   source:
-    # Git repository URL for n8n helm chart
-    repoURL: https://github.com/martinjung2013/n8n-helm-chart
-    targetRevision: HEAD
-    path: .
-
-    helm:
-      releaseName: n8n
+    # Git repository URL - AKS deployment manifests
+    repoURL: https://github.com/martinjung2013/Tetris-AKS-IGM.git
+    targetRevision: webapp
+    path: k8s/n8n
 
   destination:
     server: https://kubernetes.default.svc
@@ -23,8 +20,9 @@ spec:
 
   syncPolicy:
     automated:
-      prune: false
-      selfHeal: false
+      prune: true
+      selfHeal: true
+      allowEmpty: false
     syncOptions:
     - CreateNamespace=true
     - PrunePropagationPolicy=foreground
