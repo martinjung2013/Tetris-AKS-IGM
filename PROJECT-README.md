@@ -29,6 +29,19 @@ http://4.217.223.153
 - 사용자명: `admin`
 - 비밀번호: `N8nAdmin2025!`
 
+### Prometheus 모니터링 접속
+
+**Public IP**: `4.218.11.179`
+
+```
+http://4.218.11.179
+```
+
+**특징:**
+- 실시간 메트릭 모니터링
+- N8N 워크플로우 실행 추적
+- Kubernetes 클러스터 상태 확인
+
 ### 로컬 개발 환경 (Port Forward)
 
 ```bash
@@ -138,12 +151,17 @@ kubectl apply -f argocd/monitoring-application.yaml
 ### Prometheus & Grafana
 
 모니터링 스택이 구성되어 있습니다:
-- Prometheus: 메트릭 수집 (30일 보존)
-- Grafana: 시각화 대시보드
-- N8N 메트릭: 워크플로우 실행, 에러율
-- Kubernetes 메트릭: CPU, 메모리, 네트워크
+- **Prometheus**: 메트릭 수집 (30일 보존)
+  - 접속: http://4.218.11.179
+  - 포트: 80, 9090
+  - 상태: ✅ 외부 접속 가능
+- **Grafana**: 시각화 대시보드 (배포 예정)
+- **N8N 메트릭**: 워크플로우 실행, 에러율
+- **Kubernetes 메트릭**: CPU, 메모리, 네트워크
 
-**자세한 내용**: [MONITORING-SUMMARY.md](MONITORING-SUMMARY.md)
+**자세한 내용**:
+- [PROMETHEUS-ACCESS.md](PROMETHEUS-ACCESS.md) - Prometheus 외부 접속
+- [MONITORING-SUMMARY.md](MONITORING-SUMMARY.md) - 모니터링 스택 요약
 
 ### BI 도구 연동
 
@@ -168,6 +186,7 @@ Power BI, Tableau, Looker 연동 지원:
 - [FIREWALL-SETUP.md](FIREWALL-SETUP.md) - 방화벽 및 프록시 설정
 
 ### 모니터링
+- [PROMETHEUS-ACCESS.md](PROMETHEUS-ACCESS.md) - Prometheus 외부 접속 정보
 - [MONITORING-SUMMARY.md](MONITORING-SUMMARY.md) - 모니터링 스택 요약
 - [k8s/monitoring/README.md](k8s/monitoring/README.md) - 상세 가이드
 - [k8s/monitoring/DEPLOYMENT.md](k8s/monitoring/DEPLOYMENT.md) - 배포 가이드
