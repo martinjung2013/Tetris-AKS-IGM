@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-loadbalancer
+  namespace: monitoring
+  labels:
+    app: prometheus
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "mc_rg-liked-yak_cluster-right-marmoset_koreacentral"
+    service.beta.kubernetes.io/azure-pip-name: "prometheus-public-ip"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 4.218.11.179
+  ports:
+  - port: 80
+    targetPort: 9090
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: prometheus
+  selector:
+    app: prometheus

@@ -1,0 +1,18 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and update with your values
+
+# Resource Group
+resource_group_location      = "koreacentral"
+resource_group_name_prefix   = "rg"
+
+# AKS Configuration
+node_count = 3
+username   = "azureadmin"
+
+# MySQL Configuration
+mysql_admin_username = "mysqladmin"
+mysql_admin_password = "YourSecurePassword123!Change_This"
+
+# Note: For production, use Azure Key Vault or environment variables for sensitive values
+# Example:
+# export TF_VAR_mysql_admin_password="your-secure-password"

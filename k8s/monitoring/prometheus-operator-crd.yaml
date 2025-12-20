@@ -1,0 +1,16 @@
+# Prometheus Operator CRD 설치가 필요한 경우를 위한 참조 파일
+# ServiceMonitor를 사용하려면 Prometheus Operator가 필요합니다
+#
+# 설치 방법:
+# kubectl apply -f https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/main/bundle.yaml
+#
+# 또는 Helm으로 설치:
+# helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+# helm repo update
+# helm install prometheus-operator prometheus-community/kube-prometheus-stack -n monitoring
+
+---
+# 만약 Prometheus Operator 없이 기본 Prometheus를 사용한다면
+# prometheus-configmap.yaml의 scrape_configs가 작동합니다.
+#
+# 이 파일은 참조용입니다.
