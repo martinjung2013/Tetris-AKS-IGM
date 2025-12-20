@@ -1,0 +1,39 @@
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan*
+.terraform.lock.hcl
+
+# Rollback backups
+rollback_backups/
+
+# Credentials and secrets
+*.pem
+*.key
+id_rsa*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Binary files
+*.exe
+*.dll
+
+# Temporary files
+*.tmp
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Word/Excel files (keep documentation separate)
+*.docx
+*.xlsx

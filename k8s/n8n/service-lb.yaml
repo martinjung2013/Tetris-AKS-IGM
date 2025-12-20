@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-loadbalancer
+  namespace: n8n
+  labels:
+    app: n8n
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "mc_rg-liked-yak_cluster-right-marmoset_koreacentral"
+    service.beta.kubernetes.io/azure-pip-name: "n8n-public-ip"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 4.217.223.153
+  ports:
+  - port: 80
+    targetPort: 5678
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 5678
+    protocol: TCP
+    name: https
+  selector:
+    app: n8n

@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bi-integration-config
+  namespace: monitoring
+data:
+  # Power BI / Tableau / Looker 등 BI 도구 연동 설정
+  bi-config.json: |
+    {
+      "grafana": {
+        "url": "https://grafana.igm.local",
+        "apiEndpoint": "/api/",
+        "features": {
+          "publicDashboards": true,
+          "embedding": true,
+          "apiAccess": true
+        }
+      },
+      "prometheus": {
+        "url": "https://prometheus.igm.local",
+        "queryEndpoint": "/api/v1/query",
+        "rangeQueryEndpoint": "/api/v1/query_range",
+        "labelsEndpoint": "/api/v1/labels",
+        "seriesEndpoint": "/api/v1/series"
+      },
+      "powerbi": {
+        "enabled": true,
+        "refreshInterval": "PT1H",
+        "dataSource": "prometheus",
+        "queries": [
+          {
+            "name": "n8n_execution_metrics",
+            "query": "rate(n8n_executions_total[5m])"
+          },
+          {
+            "name": "n8n_workflow_metrics",
+            "query": "n8n_workflow_execution_duration_seconds"
+          },
+          {
+            "name": "kubernetes_pod_metrics",
+            "query": "sum(rate(container_cpu_usage_seconds_total[5m])) by (pod, namespace)"
+          },
+          {
+            "name": "kubernetes_memory_metrics",
+            "query": "sum(container_memory_usage_bytes) by (pod, namespace)"
+          }
+        ]
+      },
+      "tableau": {
+        "enabled": true,
+        "connector": "web-data-connector",
+        "grafanaDataSource": true
+      },
+      "looker": {
+        "enabled": true,
+        "connector": "grafana-plugin",
+        "prometheusDirectAccess": true
+      },
+      "exportSchedule": {
+        "enabled": true,
+        "interval": "hourly",
+        "format": ["json", "csv"],
+        "destination": "azure-storage"
+      }
+    }
+
+  # Grafana 대시보드 공개 설정
+  public-dashboards.yaml: |
+    dashboards:
+      - name: "N8N Execution Overview"
+        uid: "n8n-exec-overview"
+        publicAccess: true
+        timeRange: "now-24h"
+      - name: "Kubernetes Cluster Monitoring"
+        uid: "k8s-cluster-monitor"
+        publicAccess: true
+        timeRange: "now-6h"
+      - name: "Application Performance"
+        uid: "app-performance"
+        publicAccess: false
+        timeRange: "now-12h"
+
+  # 데이터 내보내기 스크립트 설정
+  export-config.sh: |
+    #!/bin/bash
+    # Prometheus 데이터를 BI 도구용으로 내보내기
+
+    PROMETHEUS_URL="http://prometheus:9090"
+    GRAFANA_URL="http://grafana:3000"
+    EXPORT_DIR="/exports"
+
+    # 주요 메트릭 쿼리
+    QUERIES=(
+      "n8n_executions_total"
+      "n8n_workflow_execution_duration_seconds"
+      "container_cpu_usage_seconds_total"
+      "container_memory_usage_bytes"
+      "kube_pod_status_phase"
+    )
+
+    # 각 쿼리를 실행하고 JSON으로 저장
+    for query in "${QUERIES[@]}"; do
+      curl -G "${PROMETHEUS_URL}/api/v1/query" \
+        --data-urlencode "query=${query}" \
+        -o "${EXPORT_DIR}/${query}.json"
+    done

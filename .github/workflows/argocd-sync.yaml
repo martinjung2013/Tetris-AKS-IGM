@@ -1,0 +1,59 @@
+name: ArgoCD Sync
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/**'
+      - 'argocd/**'
+
+env:
+  ARGOCD_SERVER: '20.249.152.142'
+  ARGOCD_USERNAME: 'admin'
+  AKS_RESOURCE_GROUP: 'rg-liked-yak'
+  AKS_CLUSTER_NAME: 'cluster-right-marmoset'
+
+jobs:
+  argocd-sync:
+    name: Sync ArgoCD Applications
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Login to ArgoCD
+        run: |
+          argocd login ${{ env.ARGOCD_SERVER }} \
+            --username ${{ env.ARGOCD_USERNAME }} \
+            --password ${{ secrets.ARGOCD_PASSWORD }} \
+            --insecure
+
+      - name: Create or Update N8N Application
+        run: |
+          argocd app create n8n \
+            --repo https://github.com/${{ github.repository }}.git \
+            --path k8s/n8n \
+            --dest-server https://kubernetes.default.svc \
+            --dest-namespace n8n \
+            --sync-policy automated \
+            --auto-prune \
+            --self-heal \
+            --upsert
+
+      - name: Sync N8N Application
+        run: |
+          argocd app sync n8n --prune --force
+
+      - name: Wait for Sync
+        run: |
+          argocd app wait n8n --health --timeout 300
+
+      - name: Get Application Status
+        run: |
+          argocd app get n8n

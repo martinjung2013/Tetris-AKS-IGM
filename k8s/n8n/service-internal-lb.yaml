@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: n8n-internal
+  namespace: n8n
+  labels:
+    app: n8n
+  annotations:
+    # Internal LoadBalancer 설정
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    # VNet의 AKS 서브넷에 배치
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "aks-subnet"
+    # Private Link Service 활성화
+    service.beta.kubernetes.io/azure-pls-create: "true"
+    service.beta.kubernetes.io/azure-pls-name: "n8n-pls"
+    service.beta.kubernetes.io/azure-pls-ip-configuration-subnet: "private-endpoints-subnet"
+    service.beta.kubernetes.io/azure-pls-ip-configuration-ip-address-count: "1"
+    service.beta.kubernetes.io/azure-pls-proxy-protocol: "false"
+    # Prometheus 메트릭 수집
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "5678"
+    prometheus.io/path: "/metrics"
+spec:
+  type: LoadBalancer
+  # Session affinity for sticky sessions
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours
+  ports:
+  - port: 80
+    targetPort: 5678
+    protocol: TCP
+    name: http
+  - port: 443
+    targetPort: 5678
+    protocol: TCP
+    name: https
+  selector:
+    app: n8n

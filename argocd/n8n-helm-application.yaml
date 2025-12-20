@@ -1,0 +1,144 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: n8n-helm
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  # n8n Helm Chart 소스
+  source:
+    # n8n 공식 Helm Chart 레포지토리
+    repoURL: https://8gears.container-registry.com/chartrepo/library
+    chart: n8n
+    targetRevision: 0.22.0  # 안정 버전 사용
+
+    helm:
+      # Helm Values 오버라이드
+      values: |
+        # n8n 설정
+        replicaCount: 1
+
+        image:
+          repository: n8nio/n8n
+          tag: latest
+          pullPolicy: Always
+
+        service:
+          type: LoadBalancer
+          port: 80
+          targetPort: 5678
+
+        # 리소스 제한
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+        # Persistence 설정
+        persistence:
+          enabled: true
+          storageClass: "managed-premium"
+          size: 10Gi
+          accessModes:
+            - ReadWriteOnce
+
+        # 보안 컨텍스트
+        securityContext:
+          fsGroup: 1000
+          runAsUser: 1000
+          runAsNonRoot: true
+
+        # 환경 변수 (ConfigMap)
+        extraEnv:
+          - name: N8N_HOST
+            value: "n8n.example.com"
+          - name: N8N_PORT
+            value: "5678"
+          - name: N8N_PROTOCOL
+            value: "http"
+          - name: GENERIC_TIMEZONE
+            value: "Asia/Seoul"
+          - name: N8N_LOG_LEVEL
+            value: "info"
+          - name: N8N_METRICS
+            value: "true"
+          - name: EXECUTIONS_MODE
+            value: "queue"
+          - name: QUEUE_BULL_REDIS_HOST
+            value: "redis-rg-liked-yak.redis.cache.windows.net"
+          - name: QUEUE_BULL_REDIS_PORT
+            value: "6380"
+          - name: QUEUE_BULL_REDIS_TLS
+            value: "true"
+          - name: N8N_BASIC_AUTH_ACTIVE
+            value: "true"
+          - name: N8N_SECURE_COOKIE
+            value: "false"
+
+        # Secret 환경 변수
+        extraEnvFrom:
+          - secretRef:
+              name: n8n-secrets
+
+        # PostgreSQL 설정 (내부 PostgreSQL 사용)
+        postgresql:
+          enabled: false  # 이미 배포된 PostgreSQL 사용
+
+        # Redis 설정 (외부 Azure Redis 사용)
+        redis:
+          enabled: false
+
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 5678
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 5678
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+
+  # 배포 대상
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: n8n
+
+  # 자동 동기화 정책
+  syncPolicy:
+    automated:
+      prune: true        # 삭제된 리소스 자동 제거
+      selfHeal: true     # 클러스터 상태가 Git과 다를 경우 자동 복구
+      allowEmpty: false  # 빈 커밋 무시
+
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      - ServerSideApply=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health check 설정
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas

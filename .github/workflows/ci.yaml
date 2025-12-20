@@ -1,0 +1,108 @@
+name: CI - Build and Test
+
+# GitHub Webhook을 통해 트리거됨
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+    paths:
+      - 'k8s/**'
+      - 'argocd/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  lint-and-validate:
+    name: Lint and Validate Kubernetes Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint Kubernetes manifests
+        run: |
+          yamllint k8s/ || true
+
+      - name: Install kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo mv kubeval /usr/local/bin
+
+      - name: Validate Kubernetes manifests
+        run: |
+          kubeval --strict k8s/**/*.yaml
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: [lint-and-validate]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Placeholder for application tests
+        run: |
+          echo "Add your application-specific tests here"
+          echo "For example: npm test, pytest, go test, etc."
+
+  build-status:
+    name: CI Build Status
+    runs-on: ubuntu-latest
+    needs: [lint-and-validate, security-scan, test]
+    if: always()
+    steps:
+      - name: Check CI Status
+        run: |
+          if [ "${{ needs.lint-and-validate.result }}" == "success" ] && \
+             [ "${{ needs.security-scan.result }}" == "success" ] && \
+             [ "${{ needs.test.result }}" == "success" ]; then
+            echo "✅ All CI checks passed!"
+            echo "Ready for CD via ArgoCD"
+          else
+            echo "❌ Some CI checks failed"
+            exit 1
+          fi
+
+      - name: Notify CD Pipeline
+        if: success() && github.ref == 'refs/heads/main'
+        run: |
+          echo "CI passed. ArgoCD will handle CD automatically."
+          echo "Check ArgoCD UI for deployment status: http://${{ env.ARGOCD_SERVER }}"
