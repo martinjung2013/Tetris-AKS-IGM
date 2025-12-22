@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-loadbalancer
+  namespace: monitoring
+  labels:
+    app: grafana
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: "mc_rg-liked-yak_cluster-right-marmoset_koreacentral"
+    service.beta.kubernetes.io/azure-pip-name: "grafana-public-ip"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 20.196.95.210
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  - port: 3000
+    targetPort: 3000
+    protocol: TCP
+    name: grafana
+  selector:
+    app: grafana

@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-services
+  namespace: backend
+  labels:
+    app: backend
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      tier: backend
+  namespaceSelector:
+    matchNames:
+    - backend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: api-gateway
+  namespace: backend
+  labels:
+    app: api-gateway
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      tier: gateway
+  namespaceSelector:
+    matchNames:
+    - backend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
