@@ -7,10 +7,13 @@ data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
+      scrape_timeout: 10s
       evaluation_interval: 15s
       external_labels:
-        cluster: 'aks-igm-cluster'
+        cluster: 'cluster-right-marmoset'
         environment: 'production'
+        region: 'koreacentral'
+        resource_group: 'rg-liked-yak'
 
     # Alertmanager configuration
     alerting:
@@ -44,7 +47,7 @@ data:
             action: keep
             regex: default;kubernetes;https
 
-      # Kubernetes 노드
+      # Kubernetes 노드 (AKS 노드 정보 수집)
       - job_name: 'kubernetes-nodes'
         kubernetes_sd_configs:
           - role: node
@@ -53,8 +56,18 @@ data:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
+          # 모든 노드 레이블을 메트릭 레이블로 추가
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
+          # 노드 이름 추가
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node_name
+          # 노드 내부 IP 추가
+          - source_labels: [__meta_kubernetes_node_address_InternalIP]
+            target_label: internal_ip
+          # 노드 호스트명 추가
+          - source_labels: [__meta_kubernetes_node_address_Hostname]
+            target_label: hostname
 
       # Kubernetes pods
       - job_name: 'kubernetes-pods'
@@ -147,7 +160,7 @@ data:
           - source_labels: [__meta_kubernetes_service_name]
             target_label: kubernetes_name
 
-      # cAdvisor for container metrics
+      # cAdvisor for container metrics (AKS 노드 리소스 메트릭)
       - job_name: 'kubernetes-cadvisor'
         kubernetes_sd_configs:
           - role: node
@@ -156,11 +169,20 @@ data:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
+          # 모든 노드 레이블 매핑
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
+          # API 서버 주소로 변경
           - target_label: __address__
             replacement: kubernetes.default.svc:443
+          # cAdvisor 메트릭 경로 설정
           - source_labels: [__meta_kubernetes_node_name]
             regex: (.+)
             target_label: __metrics_path__
             replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+          # 노드 이름 레이블 추가
+          - source_labels: [__meta_kubernetes_node_name]
+            target_label: node
+          # 노드 내부 IP 레이블 추가
+          - source_labels: [__meta_kubernetes_node_address_InternalIP]
+            target_label: node_ip
